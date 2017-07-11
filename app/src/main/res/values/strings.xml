@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Video Analytics</string>
+    <string name="label_time">Продолжительность записи (сек.)</string>
+    <string name="label_resolution">Разрешение видео</string>
+    <string name="label_start">Старт</string>
+    <string name="hint_time">60</string>
+
+    <array name="resolutions">
+        <item>320 X 480</item>
+        <item>480 X 640</item>
+        <item>480 X 768</item>
+        <item>720 X 960</item>
+        <item>960 X 1200</item>
+    </array>
+</resources>
