@@ -1,23 +1,15 @@
 package ru.onyanov.videoanalytics;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private Bitmap icon;
-    private ColorParser colorParser;
-    private int numOfThreads;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,9 +19,10 @@ public class MainActivity extends AppCompatActivity {
 
 
         Log.d(TAG, "onCreate: start");
-        icon = BitmapFactory.decodeResource(getResources(), R.drawable.frame3);
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.frame3);
 
-        colorParser = new ColorParser();
+
+        //colorParser = new ColorParser(new ColorPalette());
 
 
         // 01. calculate in one thread. To long!
@@ -38,24 +31,66 @@ public class MainActivity extends AppCompatActivity {
         // 02. calculate in eight threads.
         // calcEightThreads();
 
-        numOfThreads = Runtime.getRuntime().availableProcessors();
-        calcExecutor();
+
+        //calcExecutor();
+
+        clearFrameService();
+
+        final int[] pixels = new int[icon.getWidth() * icon.getHeight()];
+        icon.getPixels(pixels, 0, icon.getWidth(), 0, 0, icon.getWidth(), icon.getHeight());
+
+        Log.d(TAG, "onCreate: pixels size = " + pixels.length);
+
+        int pixelsPerRequest = 1024;
+        int chunksCount = (pixels.length + pixelsPerRequest - 1) / pixelsPerRequest;
+        Log.d(TAG, "onCreate: (" + pixels.length + " + " + pixelsPerRequest + " - 1) / " + pixelsPerRequest + ") = " + chunksCount);
+
+        for (int i = 0; i < chunksCount; i++) {
+            int offset = i * pixelsPerRequest;
+            int length = offset + pixelsPerRequest > pixels.length ? pixels.length - offset : pixelsPerRequest;
+            int[] chunk = new int[length];
+            System.arraycopy(pixels, offset, chunk, 0, length);
+
+            Log.d(TAG, "send " + length + " pixels");
+
+            Intent intent = new Intent(this, FrameService.class);
+            intent.putExtra(FrameService.FIELD_PIXELS, chunk);
+            startService(intent);
+        }
+
+        exportFrameService();
     }
 
+    private void exportFrameService() {
+        Intent intent = new Intent(this, FrameService.class);
+        intent.putExtra(FrameService.FIELD_EXPORT, true);
+        startService(intent);
+    }
+
+    private void clearFrameService() {
+        Intent intent = new Intent(this, FrameService.class);
+        intent.putExtra(FrameService.FIELD_CLEAR, true);
+        startService(intent);
+    }
+
+    /*
     private void calcExecutor() {
+        numOfThreads = Runtime.getRuntime().availableProcessors();
         ExecutorService exec = Executors.newFixedThreadPool(numOfThreads);
+
+        final int[] pixels = new int[icon.getWidth() * icon.getHeight()];
+        icon.getPixels(pixels, 0, icon.getWidth(), 0, 0, icon.getWidth(), icon.getHeight());
+
+        final int chunkSize = pixels.length / numOfThreads;
+
         try {
-            for (int y = 0; y < icon.getHeight(); y++) {
-                final int finalY = y;
+            for (int t = 0; t < numOfThreads; t++) {
+                final int thread = t;
                 exec.execute(new Runnable() {
                     @Override
                     public void run() {
-                        int pixel;
-                        float[] hsv = new float[3];
-                        for (int x = 0; x < icon.getHeight(); x++) {
-                            pixel = icon.getPixel(x, finalY);
-                            Color.colorToHSV(pixel, hsv);
-                            colorParser.addColor(hsv);
+                        for (int i = chunkSize * thread; i < chunkSize * (thread + 1); i++) {
+                            colorParser.addColor(pixels[i]);
                         }
                     }
                 });
@@ -68,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        Log.d(TAG, "calcExecutor: " + Arrays.toString(colorParser.getData()));
+        Log.d(TAG, "calcExecutor: " + colorParser.getPalette());
     }
 
     private void calcEightThreads() {
@@ -86,21 +121,19 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        Log.d(TAG, "calcEightThreads: " + Arrays.toString(colorParser.getData()));
+        Log.d(TAG, "calcEightThreads: " + colorParser.getPalette());
     }
 
 
     private void calcPlain() {
         int pixel;
-        float[] hsv = new float[3];
         for (int y = 0; y < icon.getHeight(); y++) {
             for (int x = 0; x < icon.getHeight(); x++) {
                 pixel = icon.getPixel(x, y);
-                Color.colorToHSV(pixel, hsv);
-                colorParser.addColor(hsv);
+                colorParser.addColor(pixel);
             }
         }
-        Log.d(TAG, "calcPlain: " + Arrays.toString(colorParser.getData()));
+        Log.d(TAG, "calcPlain: " + colorParser.getPalette());
     }
 
     public class Worker implements Runnable {
@@ -114,14 +147,13 @@ public class MainActivity extends AppCompatActivity {
 
         public void run() {
             int pixel;
-            float[] hsv = new float[3];
             for(int y = minIndex; y < maxIndex; y++) {
                 for (int x = 0; x < icon.getHeight(); x++) {
                     pixel = icon.getPixel(x, y);
-                    Color.colorToHSV(pixel, hsv);
-                    colorParser.addColor(hsv);
+                    colorParser.addColor(pixel);
                 }
             }
         }
     }
+    */
 }
