@@ -1,4 +1,4 @@
-package ru.onyanov.videoanalytics;
+package ru.onyanov.videoanalytics.parse;
 
 import android.util.Log;
 
@@ -6,11 +6,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import ru.onyanov.videoanalytics.ColorPalette;
+
 /**
- * Created by onaynov.dn on 12.07.2017.
+ * Allows parallel processing tasks and reports progress to listener
  */
 
-public class ParserThreadPoolExecutor extends ThreadPoolExecutor {
+class ParseThreadPoolExecutor extends ThreadPoolExecutor {
 
     private static final String TAG = "ParserThreadPoolExecuto";
 
@@ -19,15 +21,9 @@ public class ParserThreadPoolExecutor extends ThreadPoolExecutor {
     private static final long keepAliveTime = 5;
     private final ParseListener listener;
 
-    public ParserThreadPoolExecutor(BlockingQueue<Runnable> workQueue, ParseListener listener) {
+    ParseThreadPoolExecutor(BlockingQueue<Runnable> workQueue, ParseListener listener) {
         super(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.SECONDS, workQueue);
         this.listener = listener;
-    }
-
-    @Override
-    protected void beforeExecute(Thread t, Runnable r) {
-        super.beforeExecute(t, r);
-        //System.out.println("Perform beforeExecute() logic");
     }
 
     @Override
@@ -35,13 +31,11 @@ public class ParserThreadPoolExecutor extends ThreadPoolExecutor {
         super.afterExecute(r, t);
         if (t != null) {
             Log.e(TAG, "afterExecute: ", t);
+            return;
         }
-
         ColorPalette palette = ((ParseThread) r).getPalette();
         listener.onParsed(palette);
     }
-
-
 
     interface ParseListener {
 

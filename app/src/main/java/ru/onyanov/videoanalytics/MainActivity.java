@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import ru.onyanov.videoanalytics.parse.ParseService;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -53,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "send " + length + " pixels");
 
-            Intent intent = new Intent(this, FrameService.class);
-            intent.putExtra(FrameService.FIELD_PIXELS, chunk);
+            Intent intent = new Intent(this, ParseService.class);
+            intent.putExtra(ParseService.FIELD_PIXELS, chunk);
             startService(intent);
         }
 
@@ -62,14 +64,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void exportFrameService() {
-        Intent intent = new Intent(this, FrameService.class);
-        intent.putExtra(FrameService.FIELD_EXPORT, true);
+        Intent intent = new Intent(this, ParseService.class);
+        intent.putExtra(ParseService.FIELD_EXPORT, true);
         startService(intent);
     }
 
     private void clearFrameService() {
-        Intent intent = new Intent(this, FrameService.class);
-        intent.putExtra(FrameService.FIELD_CLEAR, true);
+        Intent intent = new Intent(this, ParseService.class);
+        intent.putExtra(ParseService.FIELD_CLEAR, true);
         startService(intent);
     }
 

@@ -1,4 +1,4 @@
-package ru.onyanov.videoanalytics;
+package ru.onyanov.videoanalytics.parse;
 
 import android.app.Service;
 import android.content.Intent;
@@ -11,20 +11,22 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class FrameService extends Service implements ParserThreadPoolExecutor.ParseListener {
+import ru.onyanov.videoanalytics.ColorPalette;
 
-    private static final String TAG = "FrameService";
+public class ParseService extends Service implements ParseThreadPoolExecutor.ParseListener {
+
+    private static final String TAG = "ParseService";
     public static final String FIELD_PIXELS = "pixels";
     public static final String FIELD_CLEAR = "clear";
     public static final String FIELD_EXPORT = "export";
-    private ParserThreadPoolExecutor executor;
+    private ParseThreadPoolExecutor executor;
     private ColorPalette palette;
 
     @Override
     public void onCreate() {
         BlockingQueue<Runnable> blockingQueue = new ArrayBlockingQueue<>(1024);
 
-        executor = new ParserThreadPoolExecutor(blockingQueue, this);
+        executor = new ParseThreadPoolExecutor(blockingQueue, this);
 
         executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
             @Override

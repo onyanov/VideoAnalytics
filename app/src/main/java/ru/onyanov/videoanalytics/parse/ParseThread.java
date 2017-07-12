@@ -1,21 +1,23 @@
-package ru.onyanov.videoanalytics;
+package ru.onyanov.videoanalytics.parse;
 
 import android.graphics.Color;
 
+import ru.onyanov.videoanalytics.ColorPalette;
+
 /**
- * Created by onaynov.dn on 12.07.2017.
+ * Thread provides color group detection
  */
 
-public class ParseThread implements Runnable {
+class ParseThread implements Runnable {
 
     private int[] pixels;
     private ColorPalette palette = new ColorPalette();
 
-    public ParseThread(int[] pixels) {
+    ParseThread(int[] pixels) {
         this.pixels = pixels;
     }
 
-    public ColorPalette getPalette() {
+    ColorPalette getPalette() {
         return palette;
     }
 
@@ -34,7 +36,7 @@ public class ParseThread implements Runnable {
         else if (hsv[2] < 0.1) palette.black++;
         else {
             float deg = hsv[0];
-            if (deg >=  30 && deg <  70) palette.yellow++;
+            if (deg >= 30 && deg <  70) palette.yellow++;
             else if (deg >=  70 && deg < 150) palette.green++;
             else if (deg >= 150 && deg < 200) palette.cyan++;
             else if (deg >= 210 && deg < 270) palette.blue++;
