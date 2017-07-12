@@ -9,14 +9,21 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="ru.onyanov.videoanalytics.MainActivity">
+    tools:context="ru.onyanov.videoanalytics.MainActivity"
+    tools:ignore="HardcodedText,ButtonStyle">
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:text="Start" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:weightSum="4"
-        tools:ignore="HardcodedText,ButtonStyle">
+        android:weightSum="4">
 
         <Button
             android:id="@+id/image1"
@@ -50,6 +57,13 @@
             android:layout_weight="1"
             android:text="4" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:text="Stop" />
 
     <TextView
         android:id="@+id/progress"

@@ -1,15 +1,18 @@
 package ru.onyanov.videoanalytics;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 
 import ru.onyanov.videoanalytics.parse.ParseService;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
 
@@ -19,48 +22,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        View button1 = findViewById(R.id.image1);
+        View button2 = findViewById(R.id.image2);
+        View button3 = findViewById(R.id.image3);
+        View button4 = findViewById(R.id.image4);
+
+        button1.setOnClickListener(this);
+        button2.setOnClickListener(this);
+        button3.setOnClickListener(this);
+        button4.setOnClickListener(this);
 
         Log.d(TAG, "onCreate: start");
-        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.frame3);
 
 
-        //colorParser = new ColorParser(new ColorPalette());
 
 
-        // 01. calculate in one thread. To long!
-        // calcPlain();
-
-        // 02. calculate in eight threads.
-        // calcEightThreads();
-
-
-        //calcExecutor();
-
-        clearFrameService();
-
-        final int[] pixels = new int[icon.getWidth() * icon.getHeight()];
-        icon.getPixels(pixels, 0, icon.getWidth(), 0, 0, icon.getWidth(), icon.getHeight());
-
-        Log.d(TAG, "onCreate: pixels size = " + pixels.length);
-
-        int pixelsPerRequest = 1024;
-        int chunksCount = (pixels.length + pixelsPerRequest - 1) / pixelsPerRequest;
-        Log.d(TAG, "onCreate: (" + pixels.length + " + " + pixelsPerRequest + " - 1) / " + pixelsPerRequest + ") = " + chunksCount);
-
-        for (int i = 0; i < chunksCount; i++) {
-            int offset = i * pixelsPerRequest;
-            int length = offset + pixelsPerRequest > pixels.length ? pixels.length - offset : pixelsPerRequest;
-            int[] chunk = new int[length];
-            System.arraycopy(pixels, offset, chunk, 0, length);
-
-            Log.d(TAG, "send " + length + " pixels");
-
-            Intent intent = new Intent(this, ParseService.class);
-            intent.putExtra(ParseService.FIELD_PIXELS, chunk);
-            startService(intent);
-        }
-
-        exportFrameService();
     }
 
     private void exportFrameService() {
@@ -73,6 +49,82 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, ParseService.class);
         intent.putExtra(ParseService.FIELD_CLEAR, true);
         startService(intent);
+    }
+
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+        switch (id) {
+            case R.id.start:
+                clearFrameService();
+                break;
+            case R.id.image1:
+                addFrame(R.drawable.frame1);
+                break;
+            case R.id.image2:
+                addFrame(R.drawable.frame2);
+                break;
+            case R.id.image3:
+                addFrame(R.drawable.frame3);
+                break;
+            case R.id.image4:
+                addFrame(R.drawable.frame4);
+                break;
+            case R.id.stop:
+                exportFrameService();
+                break;
+
+        }
+    }
+
+    private void addFrame(int resId) {
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), resId);
+        int[] pixels = getPixelsFromBitmap(bitmap);
+        sendPixelsToParser(pixels);
+    }
+
+    private int[] getPixelsFromBitmap(Bitmap bitmap) {
+        final int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        Log.d(TAG, "getPixelsFromBitmap: pixels size = " + pixels.length);
+        return pixels;
+    }
+
+    private void sendPixelsToParser(int[] pixels) {
+        int pixelsPerRequest = 1024; //Max data for Intent is 4Kb. Integer takes 4 bytes.
+        int chunksCount = (pixels.length + pixelsPerRequest - 1) / pixelsPerRequest;
+        //Log.d(TAG, "onCreate: (" + pixels.length + " + " + pixelsPerRequest + " - 1) / " + pixelsPerRequest + ") = " + chunksCount);
+
+        for (int i = 0; i < chunksCount; i++) {
+            int offset = i * pixelsPerRequest;
+            int length = offset + pixelsPerRequest > pixels.length ? pixels.length - offset : pixelsPerRequest;
+            int[] chunk = new int[length];
+            System.arraycopy(pixels, offset, chunk, 0, length);
+
+            Intent intent = new Intent(this, ParseService.class);
+            intent.putExtra(ParseService.FIELD_PIXELS, chunk);
+            startService(intent);
+        }
+    }
+
+    /**
+     * Broadcast receiver for receiving status updates from the IntentService
+     */
+    private class ParseStateReceiver extends BroadcastReceiver {
+
+        private ParseStateReceiver() {}
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int counterParsed = intent.getIntExtra(Constants.DATA_COUNT_PARSED, 0);
+            int counterAll = intent.getIntExtra(Constants.DATA_COUNT_ALL, 0);
+            showProgress(counterParsed, counterAll);
+        }
+    }
+
+    private void showProgress(int parsed, int all) {
+
     }
 
     /*

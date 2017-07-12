@@ -3,6 +3,7 @@ package ru.onyanov.videoanalytics.parse;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -12,6 +13,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import ru.onyanov.videoanalytics.ColorPalette;
+import ru.onyanov.videoanalytics.Constants;
 
 public class ParseService extends Service implements ParseThreadPoolExecutor.ParseListener {
 
@@ -21,6 +23,8 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
     public static final String FIELD_EXPORT = "export";
     private ParseThreadPoolExecutor executor;
     private ColorPalette palette;
+    private int counterParsed;
+    private int counterAll;
 
     @Override
     public void onCreate() {
@@ -52,13 +56,17 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
         } else if (intent.getBooleanExtra(FIELD_EXPORT, false)) {
             executor.shutdown();
             try {
-                while(!executor.awaitTermination(10, TimeUnit.SECONDS));
+                executor.awaitTermination(10, TimeUnit.SECONDS);
                 Log.d(TAG, "onStartCommand: export " + palette);
                 stopSelf();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                stopSelf();
+            }
         } else {
             int[] pixels = intent.getIntArrayExtra(FIELD_PIXELS);
             executor.execute(new ParseThread(pixels));
+            counterAll++;
+            notifyProgress();
         }
         return START_NOT_STICKY;
     }
@@ -71,6 +79,17 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
     @Override
     public void onParsed(ColorPalette chunkPalette) {
         palette.mergeWith(chunkPalette);
-        Log.d(TAG, "onParsed: " + palette);
+        counterParsed++;
+        notifyProgress();
+    }
+
+    /**
+     * Sends broadcast to activity
+     */
+    private void notifyProgress() {
+        Intent localIntent = new Intent(Constants.BROADCAST_ACTION_PARSE)
+            .putExtra(Constants.DATA_COUNT_PARSED, counterParsed)
+            .putExtra(Constants.DATA_COUNT_ALL, counterAll);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
 }
