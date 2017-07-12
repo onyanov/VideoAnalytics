@@ -17,7 +17,7 @@
         </activity>
 
         <service
-            android:name=".FrameService"
+            android:name=".parse.ParseService"
             android:enabled="true"
             android:exported="false"></service>
     </application>
