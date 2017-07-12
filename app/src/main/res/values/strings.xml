@@ -4,6 +4,7 @@
     <string name="label_resolution">Разрешение видео</string>
     <string name="label_start">Старт</string>
     <string name="hint_time">60</string>
+    <string name="progress">%d из %d Kb</string>
 
     <array name="resolutions">
         <item>320 X 480</item>
