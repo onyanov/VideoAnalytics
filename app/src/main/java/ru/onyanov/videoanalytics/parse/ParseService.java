@@ -49,6 +49,7 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
         // Let start all core threads initially
         executor.prestartAllCoreThreads();
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent.getBooleanExtra(FIELD_CLEAR, false)) {
@@ -57,18 +58,28 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
             executor.shutdown();
             try {
                 executor.awaitTermination(10, TimeUnit.SECONDS);
-                Log.d(TAG, "onStartCommand: export " + palette);
+                if (palette != null) {
+                    Log.d(TAG, "onStartCommand: export " + palette);
+                    notifyResult(palette);
+                }
                 stopSelf();
             } catch (InterruptedException e) {
                 stopSelf();
             }
-        } else {
+        } else if (palette != null) {
             int[] pixels = intent.getIntArrayExtra(FIELD_PIXELS);
             executor.execute(new ParseThread(pixels));
             counterAll++;
             notifyProgress();
         }
         return START_NOT_STICKY;
+    }
+
+    private void notifyResult(ColorPalette palette) {
+        notifyProgress();
+        Intent localIntent = new Intent(Constants.BROADCAST_ACTION_PARSE)
+                .putExtra(Constants.DATA_RESULT, palette);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
 
     @Override
@@ -88,8 +99,8 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
      */
     private void notifyProgress() {
         Intent localIntent = new Intent(Constants.BROADCAST_ACTION_PARSE)
-            .putExtra(Constants.DATA_COUNT_PARSED, counterParsed)
-            .putExtra(Constants.DATA_COUNT_ALL, counterAll);
+                .putExtra(Constants.DATA_COUNT_PARSED, counterParsed)
+                .putExtra(Constants.DATA_COUNT_ALL, counterAll);
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
 }

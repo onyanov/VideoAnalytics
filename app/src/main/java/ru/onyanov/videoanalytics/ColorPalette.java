@@ -1,10 +1,13 @@
 package ru.onyanov.videoanalytics;
 
+import android.graphics.Color;
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Object keep numbers of each color coinside.
  */
-
-public class ColorPalette {
+public class ColorPalette implements Parcelable {
 
     public int white;
 
@@ -22,18 +25,30 @@ public class ColorPalette {
 
     public int black;
 
+    public static final int[] DISPLAY_COLORS = {
+            Color.rgb(255, 255, 255),
+            Color.rgb(244, 67, 54),
+            Color.rgb(255, 235, 59),
+            Color.rgb(76, 175, 80),
+            Color.rgb(0, 188, 212),
+            Color.rgb(33, 150, 243),
+            Color.rgb(156, 39, 176),
+            Color.rgb(0, 0, 0)
+    };
+
+    public ColorPalette() {
+    }
+
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("white: ").append(white).append(", ")
-                .append("red: ").append(red).append(", ")
-                .append("yellow: ").append(yellow).append(", ")
-                .append("green: ").append(green).append(", ")
-                .append("cyan: ").append(cyan).append(", ")
-                .append("blue: ").append(blue).append(", ")
-                .append("magenta: ").append(magenta).append(", ")
-                .append("black: ").append(black);
-        return sb.toString();
+        return "white: " + white + ", " +
+                "red: " + red + ", " +
+                "yellow: " + yellow + ", " +
+                "green: " + green + ", " +
+                "cyan: " + cyan + ", " +
+                "blue: " + blue + ", " +
+                "magenta: " + magenta + ", " +
+                "black: " + black;
     }
 
     public synchronized void mergeWith(ColorPalette palette) {
@@ -47,4 +62,54 @@ public class ColorPalette {
         black += palette.black;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(white);
+        dest.writeInt(red);
+        dest.writeInt(yellow);
+        dest.writeInt(green);
+        dest.writeInt(cyan);
+        dest.writeInt(blue);
+        dest.writeInt(magenta);
+        dest.writeInt(black);
+    }
+
+    public static final Parcelable.Creator<ColorPalette> CREATOR
+            = new Parcelable.Creator<ColorPalette>() {
+        public ColorPalette createFromParcel(Parcel in) {
+            return new ColorPalette(in);
+        }
+
+        public ColorPalette[] newArray(int size) {
+            return new ColorPalette[size];
+        }
+    };
+
+    private ColorPalette(Parcel in) {
+        white = in.readInt();
+        red = in.readInt();
+        yellow = in.readInt();
+        green = in.readInt();
+        cyan = in.readInt();
+        blue = in.readInt();
+        magenta = in.readInt();
+        black = in.readInt();
+    }
+
+    public void normalize() {
+        int sum = white + red + yellow + green + cyan + blue + magenta + black;
+        white = white / (sum / 100);
+        red = red / (sum / 100);
+        yellow = yellow / (sum / 100);
+        green = green / (sum / 100);
+        cyan = cyan / (sum / 100);
+        blue = blue / (sum / 100);
+        magenta = magenta / (sum / 100);
+        black = black / (sum / 100);
+    }
 }

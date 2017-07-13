@@ -12,4 +12,6 @@ public class Constants {
 
     public static final String DATA_COUNT_ALL = "ru.onyanov.videoanalytics.COUNT_ALL";
 
+    public static final String DATA_RESULT = "ru.onyanov.videoanalytics.RESULT";
+
 }
