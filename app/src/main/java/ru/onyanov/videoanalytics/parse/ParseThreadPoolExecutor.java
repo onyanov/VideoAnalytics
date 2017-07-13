@@ -3,6 +3,7 @@ package ru.onyanov.videoanalytics.parse;
 import android.util.Log;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +25,22 @@ class ParseThreadPoolExecutor extends ThreadPoolExecutor {
     ParseThreadPoolExecutor(BlockingQueue<Runnable> workQueue, ParseListener listener) {
         super(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.SECONDS, workQueue);
         this.listener = listener;
+        setRejectedExecutionHandler(new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r,
+                                          ThreadPoolExecutor executor) {
+                System.out.println("DemoTask Rejected. Repeat after a second.");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (!isTerminated()) {
+                    executor.execute(r);
+                }
+            }
+        });
+        prestartAllCoreThreads();
     }
 
     @Override

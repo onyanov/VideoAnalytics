@@ -8,12 +8,11 @@ import android.util.Log;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import ru.onyanov.videoanalytics.ColorPalette;
 import ru.onyanov.videoanalytics.Constants;
+import ru.onyanov.videoanalytics.PixelStorage;
 
 public class ParseService extends Service implements ParseThreadPoolExecutor.ParseListener {
 
@@ -25,6 +24,8 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
     private ColorPalette palette;
     private int counterParsed;
     private int counterAll;
+    private Thread looperThread;
+    private boolean isStopped;
 
     @Override
     public void onCreate() {
@@ -32,22 +33,27 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
 
         executor = new ParseThreadPoolExecutor(blockingQueue, this);
 
-        executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r,
-                                          ThreadPoolExecutor executor) {
-                System.out.println("DemoTask Rejected. Repeat after a second.");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                executor.execute(r);
-            }
-        });
+        looperThread = new Thread(new LooperRunnable());
+        looperThread.start();
+    }
 
-        // Let start all core threads initially
-        executor.prestartAllCoreThreads();
+    private class LooperRunnable implements Runnable {
+
+
+        @Override
+        public void run() {
+            while (!isStopped) {
+                if (palette != null) {
+                    int[] pixels = PixelStorage.getInstance().getQueue().poll();
+                    if (pixels != null) {
+                        Log.d(TAG, "run: " + pixels.length);
+                        executor.execute(new ParseThread(pixels));
+                        counterAll++;
+                        notifyProgress();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -57,6 +63,7 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
         } else if (intent.getBooleanExtra(FIELD_EXPORT, false)) {
             executor.shutdown();
             try {
+                isStopped = true;
                 executor.awaitTermination(10, TimeUnit.SECONDS);
                 if (palette != null) {
                     Log.d(TAG, "onStartCommand: export " + palette);
@@ -66,11 +73,6 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
             } catch (InterruptedException e) {
                 stopSelf();
             }
-        } else if (palette != null) {
-            int[] pixels = intent.getIntArrayExtra(FIELD_PIXELS);
-            executor.execute(new ParseThread(pixels));
-            counterAll++;
-            notifyProgress();
         }
         return START_NOT_STICKY;
     }
@@ -98,9 +100,11 @@ public class ParseService extends Service implements ParseThreadPoolExecutor.Par
      * Sends broadcast to activity
      */
     private void notifyProgress() {
-        Intent localIntent = new Intent(Constants.BROADCAST_ACTION_PARSE)
+       /* Intent localIntent = new Intent(Constants.BROADCAST_ACTION_PARSE)
                 .putExtra(Constants.DATA_COUNT_PARSED, counterParsed)
                 .putExtra(Constants.DATA_COUNT_ALL, counterAll);
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+        */
     }
+
 }

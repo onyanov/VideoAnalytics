@@ -103,6 +103,8 @@ public class ColorPalette implements Parcelable {
 
     public void normalize() {
         int sum = white + red + yellow + green + cyan + blue + magenta + black;
+        if (sum == 0) return;
+
         white = white / (sum / 100);
         red = red / (sum / 100);
         yellow = yellow / (sum / 100);
